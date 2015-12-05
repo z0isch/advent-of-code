@@ -2,10 +2,10 @@
 module Day2 where
 
 
-import Data.List
-import Text.Parsec
-import Data.Either
-import Control.Monad.Identity (Identity)
+import           Control.Monad.Identity (Identity)
+import           Data.Either
+import           Data.List
+import           Text.Parsec
 
 partOne :: Int
 partOne = sum (map wrappingPapperNeeded parsedInput)

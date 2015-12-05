@@ -1,11 +1,10 @@
-module Day4
-where
+module Day4 where
 
-import Crypto.Hash.MD5
-import Data.ByteString.Char8 (pack)
-import Data.Hex
-import qualified Data.ByteString as B
-import  Data.ByteString(ByteString)
+import           Crypto.Hash.MD5
+import           Data.ByteString       (ByteString)
+import qualified Data.ByteString       as B
+import           Data.ByteString.Char8 (pack)
+import           Data.Hex
 
 partTwo :: Int
 partTwo = solve (pack "000000")

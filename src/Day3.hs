@@ -1,8 +1,7 @@
-module Day3
-where
+module Day3 where
 
-import Data.List
-import Control.Lens
+import           Control.Lens
+import           Data.List
 
 type Instruction  = Char
 type House = (Int,Int)

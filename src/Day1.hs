@@ -1,6 +1,6 @@
 module Day1 where
 
-import Data.List
+import           Data.List
 
 type Instruction = Char
 type Floor = Int
