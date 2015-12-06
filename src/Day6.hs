@@ -13,29 +13,32 @@ data InstructionType = Toggle | On | Off
 type Grid = [(Int,[(Int,Int)])]
 
 partOne :: IO Int
-partOne = do
-  is <- input
-  let result = foldl applyInstruction startGrid is
-  return $ length $ concatMap (\(i,xs) -> filter (\(_,x) -> x >= 1) xs) result
+partOne = getAnswer applyInstruction
 
 partTwo :: IO Int
-partTwo = do
+partTwo = getAnswer applyInstruction2
+
+getAnswer :: (Grid -> Instruction -> Grid) -> IO Int
+getAnswer f = do
   is <- input
-  let result = foldl applyInstruction2 startGrid is
-  return $ sum $ concatMap (\(i,xs) -> map snd $ filter (\(_,x) -> x >= 1) xs) result
+  let result = foldl f startGrid is
+  return $ totalBrightness result
+
+totalBrightness :: Grid -> Int
+totalBrightness = sum . concatMap (map snd . snd)
 
 gridSize :: Int
 gridSize = 1000
-
-applyInstruction2 :: Grid -> Instruction -> Grid
-applyInstruction2 g (Instruction On a1 a2) = applyY (1 +) a1 a2 g
-applyInstruction2 g (Instruction Off a1 a2) = applyY (\i -> if i > 0 then i - 1 else i) a1 a2 g
-applyInstruction2 g (Instruction Toggle a1 a2) = applyY (2 +) a1 a2 g
 
 applyInstruction :: Grid -> Instruction -> Grid
 applyInstruction g (Instruction On a1 a2) = applyY (const 1) a1 a2 g
 applyInstruction g (Instruction Off a1 a2) = applyY (const 0) a1 a2 g
 applyInstruction g (Instruction Toggle a1 a2) = applyY (\i -> if i == 1 then 0 else 1) a1 a2 g
+
+applyInstruction2 :: Grid -> Instruction -> Grid
+applyInstruction2 g (Instruction On a1 a2) = applyY (1 +) a1 a2 g
+applyInstruction2 g (Instruction Off a1 a2) = applyY (\i -> if i > 0 then i - 1 else i) a1 a2 g
+applyInstruction2 g (Instruction Toggle a1 a2) = applyY (2 +) a1 a2 g
 
 applyY :: (Int -> Int) -> (Int,Int) -> (Int,Int) -> Grid -> Grid
 applyY f (x1,y1) (x2,y2) = map (\(i,s) -> if i >= y1 && i <= y2 then (i, applyX f x1 x2 s) else (i,s))
