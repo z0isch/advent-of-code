@@ -6,6 +6,7 @@ import           Data.Function          (fix)
 import           Data.HashMap.Strict    (HashMap)
 import qualified Data.HashMap.Strict    as M
 import           Data.List
+import qualified Data.Map.Lazy          as LM
 import           Data.Maybe
 import           Foreign.C.Types
 import           Text.Parsec
@@ -24,18 +25,18 @@ partOne = do
   m <- input
   return $ fasterEval m (Const (Var "a"))
 
-evalList :: HashMap String WireInput -> [(WireInput,CUShort)]
-evalList m = map (\w -> (w,eval' fasterEval m w)) wInputList
+evalList :: HashMap String WireInput -> LM.Map WireInput CUShort
+evalList m = LM.fromList $ map (\w -> (w,eval' fasterEval m w)) wInputList
   where wInputList = M.elems m ++ map (Const . Var) (M.keys m)
 
 fasterEval :: HashMap String WireInput -> WireInput -> CUShort
-fasterEval m w = fromJust (lookup w $ evalList m)
+fasterEval m w =  evalList m LM.! w
 
 eval' :: (HashMap String WireInput -> WireInput -> CUShort) -> HashMap String WireInput -> WireInput -> CUShort
 eval' f m (And x y) = getAtom' f m x .&. getAtom m y
 eval' f m (Const x) = getAtom' f m x
 eval' f m (Not x) = complement (getAtom' f m x)
-eval' f m (Or x y) = getAtom' f m y  .|. getAtom' f m y
+eval' f m (Or x y) = getAtom' f m x  .|. getAtom' f m y
 eval' f m (RShift x y) = getAtom' f m x `shiftR` fromIntegral (getAtom' f m y)
 eval' f m (LShift x y) = getAtom' f m x `shiftL` fromIntegral (getAtom' f m y)
 
@@ -43,17 +44,17 @@ getAtom' :: (HashMap String WireInput -> WireInput -> CUShort) -> HashMap String
 getAtom' _ _ (Value i) = i
 getAtom' f m (Var s) = f m (unsafeLookup m s)
 
-eval :: (Atom -> CUShort) -> WireInput -> CUShort
-eval f (Const x) = f x
-eval f (And x y) = f x .&. f y
-eval f (Not x) = complement (f x)
-eval f (Or x y) = f y  .|. f y
-eval f (RShift x y) = fromIntegral (f x) `shiftR` fromIntegral (f y)
-eval f (LShift x y) = fromIntegral (f x) `shiftL` fromIntegral (f y)
+eval :: HashMap String WireInput -> WireInput -> CUShort
+eval m (Const x) = getAtom m x
+eval m (And x y) = getAtom m x .&. getAtom m y
+eval m (Not x) = complement (getAtom m x)
+eval m (Or x y) = getAtom m y  .|. getAtom m y
+eval m (RShift x y) = getAtom m x `shiftR` fromIntegral (getAtom m y)
+eval m (LShift x y) = getAtom m x `shiftL` fromIntegral (getAtom m y)
 
 getAtom :: HashMap String WireInput -> Atom -> CUShort
 getAtom _ (Value i) = i
-getAtom m (Var s) = eval (getAtom m) (unsafeLookup m s)
+getAtom m (Var s) = eval m (unsafeLookup m s)
 
 unsafeLookup m x = fromJust $ M.lookup x m
 
