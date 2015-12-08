@@ -11,67 +11,37 @@ import           Foreign.C.Types
 import           Text.Parsec
 
 data Atom = Value CUShort | Var String
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 data WireInput = Const Atom
   | And Atom Atom
   | LShift Atom Atom
   | RShift Atom Atom
   | Not Atom
   | Or Atom Atom
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 partOne = do
   m <- input
-  return $ getAtom m (Var "a")
+  return $ fasterEval m (Const (Var "a"))
 
-evalList :: HashMap String WireInput -> [CUShort]
-evalList m = map (eval'' fasterEval m . Const . Var) (M.keys m)
+evalList :: HashMap String WireInput -> [(WireInput,CUShort)]
+evalList m = map (\w -> (w,eval' fasterEval m w)) wInputList
+  where wInputList = M.elems m ++ map (Const . Var) (M.keys m)
 
 fasterEval :: HashMap String WireInput -> WireInput -> CUShort
-fasterEval m w = undefined --evalList m !! 0
+fasterEval m w = fromJust (lookup w $ evalList m)
 
-eval'' :: (HashMap String WireInput -> WireInput -> CUShort) -> HashMap String WireInput -> WireInput -> CUShort
-eval'' f m (Const (Var i)) = f m (unsafeLookup m i)
-eval'' f m (Const (Value i)) = i
-eval'' f m (And (Value i) (Var x)) = i .&. f m (unsafeLookup m x)
-eval'' f m (And (Var i) (Var x)) = f m (unsafeLookup m i) .&. f m (unsafeLookup m x)
-eval'' f m (And (Var i) (Value x)) = f m (unsafeLookup m i) .&. x
-eval'' f m (And (Value i) (Value x)) = i .&. x
-eval'' f m (Or (Value i) (Var x)) = i .|. f m (unsafeLookup m x)
-eval'' f m (Or (Var i) (Var x)) = f m (unsafeLookup m i) .|. f m (unsafeLookup m x)
-eval'' f m (Or (Var i) (Value x)) = f m (unsafeLookup m i) .|. x
-eval'' f m (Or (Value i) (Value x)) = i .|. x
-eval'' f m (Not (Value i)) = complement i
-eval'' f m (Not (Var i)) = complement (f m (unsafeLookup m i))
-eval'' f m (RShift (Value i) (Var x)) = i `shiftR` fromIntegral (f m (unsafeLookup m x))
-eval'' f m (RShift (Var i) (Var x)) = f m (unsafeLookup m i) `shiftR` fromIntegral (f m (unsafeLookup m x))
-eval'' f m (RShift (Var i) (Value x)) = f m (unsafeLookup m i) `shiftR` fromIntegral x
-eval'' f m (RShift (Value i) (Value x)) = i `shiftR` fromIntegral x
-eval'' f m (LShift (Value i) (Var x)) = i `shiftL` fromIntegral (f m (unsafeLookup m x))
-eval'' f m (LShift (Var i) (Var x)) = f m (unsafeLookup m i) `shiftL` fromIntegral (f m (unsafeLookup m x))
-eval'' f m (LShift (Var i) (Value x)) = f m (unsafeLookup m i) `shiftL` fromIntegral x
-eval'' f m (LShift (Value i) (Value x)) = i `shiftL` fromIntegral  x
+eval' :: (HashMap String WireInput -> WireInput -> CUShort) -> HashMap String WireInput -> WireInput -> CUShort
+eval' f m (And x y) = getAtom' f m x .&. getAtom m y
+eval' f m (Const x) = getAtom' f m x
+eval' f m (Not x) = complement (getAtom' f m x)
+eval' f m (Or x y) = getAtom' f m y  .|. getAtom' f m y
+eval' f m (RShift x y) = getAtom' f m x `shiftR` fromIntegral (getAtom' f m y)
+eval' f m (LShift x y) = getAtom' f m x `shiftL` fromIntegral (getAtom' f m y)
 
-eval' m (Const (Var i)) = eval' m (unsafeLookup m i)
-eval' m (Const (Value i)) = i
-eval' m (And (Value i) (Var x)) = i .&. eval' m (unsafeLookup m x)
-eval' m (And (Var i) (Var x)) = eval' m (unsafeLookup m i) .&. eval' m (unsafeLookup m x)
-eval' m (And (Var i) (Value x)) = eval' m (unsafeLookup m i) .&. x
-eval' m (And (Value i) (Value x)) = i .&. x
-eval' m (Or (Value i) (Var x)) = i .|. eval' m (unsafeLookup m x)
-eval' m (Or (Var i) (Var x)) = eval' m (unsafeLookup m i) .|. eval' m (unsafeLookup m x)
-eval' m (Or (Var i) (Value x)) = eval' m (unsafeLookup m i) .|. x
-eval' m (Or (Value i) (Value x)) = i .|. x
-eval' m (Not (Value i)) = complement i
-eval' m (Not (Var i)) = complement (eval' m (unsafeLookup m i))
-eval' m (RShift (Value i) (Var x)) = i `shiftR` fromIntegral (eval' m (unsafeLookup m x))
-eval' m (RShift (Var i) (Var x)) = eval' m (unsafeLookup m i) `shiftR` fromIntegral (eval' m (unsafeLookup m x))
-eval' m (RShift (Var i) (Value x)) = eval' m (unsafeLookup m i) `shiftR` fromIntegral x
-eval' m (RShift (Value i) (Value x)) = i `shiftR` fromIntegral x
-eval' m (LShift (Value i) (Var x)) = i `shiftL` fromIntegral (eval' m (unsafeLookup m x))
-eval' m (LShift (Var i) (Var x)) = eval' m (unsafeLookup m i) `shiftL` fromIntegral (eval' m (unsafeLookup m x))
-eval' m (LShift (Var i) (Value x)) = eval' m (unsafeLookup m i) `shiftL` fromIntegral x
-eval' m (LShift (Value i) (Value x)) = i `shiftL` fromIntegral  x
+getAtom' :: (HashMap String WireInput -> WireInput -> CUShort) -> HashMap String WireInput -> Atom -> CUShort
+getAtom' _ _ (Value i) = i
+getAtom' f m (Var s) = f m (unsafeLookup m s)
 
 eval :: (Atom -> CUShort) -> WireInput -> CUShort
 eval f (Const x) = f x
