@@ -3,6 +3,7 @@ module  Day7 where
 import           Control.Monad.Identity (Identity)
 import           Data.Bits
 import           Data.Function          (fix)
+import           Data.Function.Memoize
 import           Data.HashMap.Strict    (HashMap)
 import qualified Data.HashMap.Strict    as M
 import           Data.List
@@ -23,17 +24,22 @@ data WireInput = Const Atom
 
 partOne = do
   m <- input
-  return $ fasterEval m (Const (Var "a"))
+  return $ eval m "a"
+partTwo = do
+  m <- input
+  let val1 = eval m "a"
+  let m2 = M.adjust (const (Const (Value val1))) "b" m
+  return $ eval m2 "a"
 
 evalList :: HashMap String WireInput -> LM.Map WireInput CUShort
 evalList m = LM.fromList $ map (\w -> (w,eval' fasterEval m w)) wInputList
-  where wInputList = M.elems m ++ map (Const . Var) (M.keys m)
+  where wInputList = nub $ map (Const . Var) (M.keys m) ++ M.elems m
 
 fasterEval :: HashMap String WireInput -> WireInput -> CUShort
 fasterEval m w =  evalList m LM.! w
 
 eval' :: (HashMap String WireInput -> WireInput -> CUShort) -> HashMap String WireInput -> WireInput -> CUShort
-eval' f m (And x y) = getAtom' f m x .&. getAtom m y
+eval' f m (And x y) = getAtom' f m x .&. getAtom' f m y
 eval' f m (Const x) = getAtom' f m x
 eval' f m (Not x) = complement (getAtom' f m x)
 eval' f m (Or x y) = getAtom' f m x  .|. getAtom' f m y
@@ -42,21 +48,24 @@ eval' f m (LShift x y) = getAtom' f m x `shiftL` fromIntegral (getAtom' f m y)
 
 getAtom' :: (HashMap String WireInput -> WireInput -> CUShort) -> HashMap String WireInput -> Atom -> CUShort
 getAtom' _ _ (Value i) = i
-getAtom' f m (Var s) = f m (unsafeLookup m s)
+getAtom' f m (Var s) = f m (m M.! s)
 
-eval :: HashMap String WireInput -> WireInput -> CUShort
-eval m (Const x) = getAtom m x
-eval m (And x y) = getAtom m x .&. getAtom m y
-eval m (Not x) = complement (getAtom m x)
-eval m (Or x y) = getAtom m y  .|. getAtom m y
-eval m (RShift x y) = getAtom m x `shiftR` fromIntegral (getAtom m y)
-eval m (LShift x y) = getAtom m x `shiftL` fromIntegral (getAtom m y)
-
-getAtom :: HashMap String WireInput -> Atom -> CUShort
-getAtom _ (Value i) = i
-getAtom m (Var s) = eval m (unsafeLookup m s)
-
-unsafeLookup m x = fromJust $ M.lookup x m
+eval :: HashMap String WireInput -> String -> CUShort
+eval m = me
+  where
+    e :: String -> CUShort
+    e s = case m M.! s of
+      (Const x) -> getAtom x
+      (And x y) -> getAtom x .&. getAtom y
+      (Or x y) -> getAtom x  .|. getAtom y
+      (Not x) -> complement (getAtom x)
+      (RShift x y) -> getAtom x `shiftR` fromIntegral (getAtom y)
+      (LShift x y) -> getAtom x `shiftL` fromIntegral (getAtom y)
+    me :: String -> CUShort
+    me = memoize e
+    getAtom :: Atom -> CUShort
+    getAtom (Value i) = i
+    getAtom (Var s) = me s
 
 parseInput :: [String] -> [(String,WireInput)]
 parseInput = map (either ( error . show) id  . parse wireInputParser "")
