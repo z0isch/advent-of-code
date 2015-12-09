@@ -19,9 +19,9 @@ actualLetterCount = flip (-) 2 . either ( error . show) id  . parse letterCountP
 codeLetterCount :: String -> Int
 codeLetterCount = length
 
-letterCountParser  = sum <$> many1 (try noEscapeParser <|> escapeParser)
-noEscapeParser = length <$> many1 (noneOf "\\")
-escapeParser = pure 1 <* char '\\' <* (try hexParser <|> try slashParser <|> quoteParser)
+letterCountParser  = sum <$> many1 (try escapeParser <|> noEscapeParser)
+noEscapeParser = pure 1 <$> anyChar
+escapeParser = pure 1 <$> char '\\' <* (try hexParser <|> try slashParser <|> quoteParser)
 hexParser = char 'x' <* hexDigit  <* hexDigit
 slashParser = char '\\'
 quoteParser = char '\"'
