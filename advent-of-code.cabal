@@ -23,7 +23,11 @@ library
                      , Day6
                      , Day7
                      , Day8
+                     , Day9
+                     , Day10
+                     , Day11
                      , Day12
+>>>>>>> 76a0cc0aac517f8e8c2dab73f5d5f95e11f113db
   build-depends:       base >= 4.7 && < 5
                      , parsec
                      , mtl
@@ -35,10 +39,14 @@ library
                      , containers
                      , memoize
                      , hashable
+<<<<<<< HEAD
                      , aeson
                      , scientific
                      , vector
                      , text
+=======
+                     , dlist
+>>>>>>> 76a0cc0aac517f8e8c2dab73f5d5f95e11f113db
   default-language:    Haskell2010
 
 executable advent-of-code-exe
