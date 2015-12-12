@@ -21,4 +21,4 @@ numberFold _ s (Number b) = s + b
 numberFold _ s _ = s
 
 input :: IO Value
-input = fromJust <$> decode <$> BL.fromStrict <$> BC.readFile "day11-input.txt"
+input = fromJust <$> decode <$> BL.fromStrict <$> BC.readFile "day12-input.txt"
