@@ -3,7 +3,6 @@ module Day14 where
 import           Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as M
 import           Data.List
-import qualified Data.Map            as Map
 
 data FlightStats = FlightStats String [(Double,Double)]
   deriving (Show)
@@ -12,7 +11,7 @@ partOne = maximum <$> map (distanceFlown 2503) <$> input
 
 partTwo = do
   fs <- input
-  return $ maximumBy (\(_,s1) (_,s2) -> compare s1 s2) $ Map.toList $ histogram (winners fs 1 2503)
+  return $ maximumBy (\(_,s1) (_,s2) -> compare s1 s2) $ histogram (winners fs 1 2503)
 
 raceStats :: [FlightStats] -> Double -> Double -> [[(String, Double)]]
 raceStats fs start end = map (\s -> map (distanceFlown s) fs) [start..end]
@@ -21,11 +20,11 @@ winners :: [FlightStats] -> Double -> Double -> [String]
 winners fs s e = concatMap first (raceStats fs s e)
 
 first :: [(String,Double)] -> [String]
-first stats = map fst $ takeWhile (\(r,s) -> s == snd (head (sorted stats))) $ sorted stats
+first stats = map fst $ takeWhile (\(_,s) -> s == snd (head (sorted stats))) $ sorted stats
   where sorted = reverse . sortOn snd
 
-histogram :: Ord a => [a] -> Map.Map a Int
-histogram xs = Map.fromList [ (head l, length l) | l <- group (sort xs) ]
+histogram :: Ord a => [a] -> [(a,Int)]
+histogram xs = [ (head l, length l) | l <- group (sort xs) ]
 
 distanceFlown :: Double -> FlightStats -> (String,Double)
 distanceFlown t (FlightStats s xs) = (,) s $ fst $ foldl calcDist (0,0) fs

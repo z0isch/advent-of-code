@@ -1,4 +1,7 @@
-extra-deps: []
+extra-deps:
+  - dsp-0.2.3.1
+extra-include-dirs:
+extra-lib-dirs:
 resolver: lts-3.14
 flags: {}
 packages:
