@@ -6,13 +6,10 @@ import           Data.List
 import           Data.Maybe
 import           Text.Parsec
 
-partOne = do
-  i <- input
-  return $ last $ sortOn snd $ map (over _2 (score scoreVal sueIn)) i
+partOne = answer scoreVal <$> input
+partTwo = answer scoreVal2 <$> input
 
-partTwo = do
-  i <- input
-  return $ last $ sortOn snd $ map (over _2 (score scoreVal2 sueIn)) i
+answer scoreEvaluator = last . sortOn snd . map (over _2 (score scoreEvaluator sueIn))
 
 score f sI = foldl (\n (d,num) -> n + maybe 0 (f d num) (lookup d sI)) 0
 scoreVal d num n = if num == n then 1 else 0

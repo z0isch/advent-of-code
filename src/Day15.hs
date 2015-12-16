@@ -12,10 +12,10 @@ data Ingredient = Ingredient { _capacity :: Int, _durability :: Int, _flavor :: 
   deriving (Show)
 makeLenses ''Ingredient
 
-partOne = maximumBy (\(_,s1) (_,s2) -> compare s1 s2) $
+partOne = last $ sortOn snd $
   map (over _2 score . (\v -> (v,calcSweets v))) $
   combinations 100
-partTwo = maximumBy (\(_,s1) (_,s2) -> compare s1 s2) $
+partTwo = last $ sortOn snd $
   map (over _2 score) $
   filter (\(v,_) -> calorieCount v == 500)  $
   map (\v -> (v,calcSweets v)) $
