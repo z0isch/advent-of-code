@@ -44,10 +44,10 @@ score (V4 c d f t)
 
 sweets :: [Ingredient] -> V4 (V4 Int)
 sweets is = V4
-  (uniqueConst $ view capacity <$> is)
-  (uniqueConst $ view durability <$> is)
-  (uniqueConst $ view flavor <$> is)
-  (uniqueConst $ view texture <$> is)
+  (uniqueConst $ map _capacity is)
+  (uniqueConst $ map _durability is)
+  (uniqueConst $ map _flavor is)
+  (uniqueConst $ map _texture is)
 
 uniqueConst :: [Int] -> V4 Int
 uniqueConst [c1,c2,c3,c4] = V4 c1 c2 c3 c4
