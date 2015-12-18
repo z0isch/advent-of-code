@@ -1,10 +1,12 @@
 module Day18 where
 
-import           Data.Vector (Vector, (!), (//))
-import qualified Data.Vector as V
+import           Codec.Picture
+import           Data.Vector   (Vector, (!), (//))
+import qualified Data.Vector   as V
 import           Text.Parsec
 
 type Grid = Vector (Vector Int)
+
 
 partOne = do
   g <- input
@@ -32,6 +34,20 @@ setUpPart2 g = g //
   where
     setCoords c = g ! c // [(0,1),(maxCoord,1)]
     maxCoord = V.length g - 1
+
+visualizePartOne = do
+  g <- input
+  let grids = take 101 $ iterate (step toggle1) g
+  return $ map (\g -> generateImage (gridPrint g) 100 100) grids
+
+visualizePartTwo = do
+  g <- input
+  let grids = take 101 $ iterate (step toggle2) g
+  return $ map (\g -> generateImage (gridPrint g) 100 100) grids
+
+gridPrint :: Grid -> Int -> Int -> PixelRGB8
+gridPrint g x y = if on then PixelRGB8 128 255 0 else PixelRGB8 0 64 0
+  where on = g ! x ! y == 1
 
 lightsOn :: Grid -> Int
 lightsOn = V.sum . V.map V.sum
