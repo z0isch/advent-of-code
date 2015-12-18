@@ -10,7 +10,7 @@ type Grid = Vector (Vector Int)
 partOne = lightsOn <$> last <$> p1
 partTwo = lightsOn <$> last <$> p2
 
-visualize = map (\g -> generateImage (gridPrint g) 100 100)
+visualize = map (\g -> generateImage (gridPrint g) (V.length g) (V.length g))
 visualizePartOne = visualize <$> p1
 visualizePartTwo = visualize <$> p2
 
