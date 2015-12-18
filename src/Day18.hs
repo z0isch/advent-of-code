@@ -7,43 +7,27 @@ import           Text.Parsec
 
 type Grid = Vector (Vector Int)
 
+partOne = lightsOn <$> last <$> p1
+partTwo = lightsOn <$> last <$> p2
 
-partOne = do
+visualize = map (\g -> generateImage (gridPrint g) 100 100)
+visualizePartOne = visualize <$> p1
+visualizePartTwo = visualize <$> p2
+
+p1 = do
   g <- input
-  let gOut = last $ take 101 $ iterate (step toggle1) g
-  return $ lightsOn gOut
-
-partTwo = do
+  return $ take 101 $ iterate (step toggle1) g
+p2 = do
   g <- input
-  let gOut = last $ take 101 $ iterate (step toggle2) (setUpPart2 g)
-  return $ lightsOn gOut
-
-test2 = do
-  g <- testInput
-  let gOut = last $ take 6 $ iterate (step toggle2) (setUpPart2 g)
-  return $ lightsOn gOut
-test1 = do
-  g <- testInput
-  let gOut = last $ take 5 $ iterate (step toggle1) g
-  return $ lightsOn gOut
-
-setUpPart2 :: Grid -> Grid
-setUpPart2 g = g //
-  [ (0, setCoords 0)
-  , (maxCoord, setCoords maxCoord)]
+  return $ take 101 $ iterate (step toggle2) (setUpPart2 g)
   where
-    setCoords c = g ! c // [(0,1),(maxCoord,1)]
-    maxCoord = V.length g - 1
+    setUpPart2 g = g //
+      [ (0, setCoords 0)
+      , (maxCoord, setCoords maxCoord)]
+      where
+        setCoords c = g ! c // [(0,1),(maxCoord,1)]
+        maxCoord = V.length g - 1
 
-visualizePartOne = do
-  g <- input
-  let grids = take 101 $ iterate (step toggle1) g
-  return $ map (\g -> generateImage (gridPrint g) 100 100) grids
-
-visualizePartTwo = do
-  g <- input
-  let grids = take 101 $ iterate (step toggle2) g
-  return $ map (\g -> generateImage (gridPrint g) 100 100) grids
 
 gridPrint :: Grid -> Int -> Int -> PixelRGB8
 gridPrint g x y = if on then PixelRGB8 128 255 0 else PixelRGB8 0 64 0
