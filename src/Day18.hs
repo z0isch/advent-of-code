@@ -1,6 +1,6 @@
 module Day18 where
 
-import           Data.Vector (Vector, (!))
+import           Data.Vector (Vector, (!), (//))
 import qualified Data.Vector as V
 import           Text.Parsec
 
@@ -26,10 +26,11 @@ test1 = do
   return $ lightsOn gOut
 
 setUpPart2 :: Grid -> Grid
-setUpPart2 g = g
-  V.// [(0,g ! 0 V.// [(0,1),(maxCoord,1)])]
-  V.// [(maxCoord, g ! maxCoord V.// [(0,1),(maxCoord,1)])]
+setUpPart2 g = g //
+  [ (0, setCoords 0)
+  , (maxCoord, setCoords maxCoord)]
   where
+    setCoords c = g ! c // [(0,1),(maxCoord,1)]
     maxCoord = V.length g - 1
 
 lightsOn :: Grid -> Int
