@@ -18,7 +18,7 @@ partOne = do
 partTwo = do
   (m,trs) <- input
   let revTrs = map (\(x,y) -> (y,x)) (nonE trs)
-  return $ takeWhileInclusive (== -1) $ transformTree revTrs (end trs) [m] 1
+  return $ transformTree revTrs (end trs) [m] 1
 
 test2 = transformTree revTrs (end trs) ["HOHOHO"] 0
   where
@@ -30,12 +30,12 @@ takeWhileInclusive _ [] = []
 takeWhileInclusive p (x:xs) = x : if p x then takeWhileInclusive p xs
                                          else []
 
-transformTree :: [Transform] -> [Medicine] -> [Medicine] -> Int -> [Int]
-transformTree trs bs [] i = [-1]
+transformTree :: [Transform] -> [Medicine] -> [Medicine] -> Int -> Int
+transformTree _ _ [] _ = maxBound
 transformTree trs bs (m:ms) i
-  | null newMeds = [-1]
-  | any (`HS.member` newMeds) bs = [i+1]
-  | otherwise = -1 : transformTree trs bs (HS.toList newMeds) (i+1) ++  transformTree trs bs ms (i+1)
+  | null newMeds = maxBound
+  | any (`HS.member` newMeds) bs = i + 1
+  | otherwise = minimum [transformTree trs bs (HS.toList newMeds) (i+1), transformTree trs bs ms (i+1)]
   where
     newMeds = genTransforms trs m
 
