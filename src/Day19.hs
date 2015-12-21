@@ -1,6 +1,8 @@
 module Day19 where
 
 import           Control.Parallel.Strategies
+import           Data.HashSet                (HashSet)
+import qualified Data.HashSet                as HS
 import           Data.List
 import           Data.Vector                 (Vector, (!), (//))
 import qualified Data.Vector                 as V
@@ -15,26 +17,39 @@ partOne = do
 
 partTwo = do
   (m,trs) <- input
-  return $ (+) 1 $ fst $ last $ takeWhileInclusive (\(_,ms) -> notElem m ms) $ iterate (step trs) (0,start trs)
+  let revTrs = map (\(x,y) -> (y,x)) (nonE trs)
+  return $ takeWhileInclusive (== -1) $ transformTree revTrs (end trs) [m] 1
 
-test2 = (+ 1) $ fst $ last $ takeWhileInclusive (\(_,ms) -> notElem "HOHOHO" ms) $ iterate (step trs) (0,start trs)
-  where trs = [("e","H"),("e","O"),("H","HO"),("H","OH"),("O","HH")]
-
-step :: [Transform] -> (Int,[Medicine]) -> (Int,[Medicine])
-step trs (i,ms) = (i+1, nub (concat $ parMap rseq (genTransforms trs) ms))
+test2 = transformTree revTrs (end trs) ["HOHOHO"] 0
+  where
+    revTrs = map (\(x,y) -> (y,x)) (nonE trs)
+    trs = [("e","H"),("e","O"),("H","HO"),("H","OH"),("O","HH")]
 
 takeWhileInclusive :: (a -> Bool) -> [a] -> [a]
 takeWhileInclusive _ [] = []
 takeWhileInclusive p (x:xs) = x : if p x then takeWhileInclusive p xs
                                          else []
+
+transformTree :: [Transform] -> [Medicine] -> [Medicine] -> Int -> [Int]
+transformTree trs bs [] i = [-1]
+transformTree trs bs (m:ms) i
+  | null newMeds = [-1]
+  | any (`HS.member` newMeds) bs = [i+1]
+  | otherwise = -1 : transformTree trs bs (HS.toList newMeds) (i+1) ++  transformTree trs bs ms (i+1)
+  where
+    newMeds = genTransforms trs m
+
+nonE = filter (\(x,y) -> x /= "e")
+end = map snd . filter (\(x,y) -> x == "e")
+
 start :: [Transform] -> [Medicine]
 start  = map snd . filter (\(i,o) -> i == "e")
 
-genTransforms :: [Transform] -> Medicine -> [Medicine]
-genTransforms trs m = nub $ concat $ zipWith (\tr is -> map (applyTransform mVec) is) trs transforms
+genTransforms :: [Transform] -> Medicine -> HashSet Medicine
+genTransforms trs m = HS.fromList $ concat $ zipWith (\tr is -> parMap rdeepseq (applyTransform mVec) is) trs transforms
   where
     mVec = V.fromList m
-    transforms = map (findTransforms m 0) trs
+    transforms = parMap rdeepseq (findTransforms m 0) trs
 
 applyTransform :: Vector Char -> (String,(Int,String)) -> String
 applyTransform m (i,(index,o)) = V.toList $ V.take index m V.++ V.fromList o V.++ V.drop (index+length i) m
