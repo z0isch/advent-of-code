@@ -18,35 +18,30 @@ partOne = do
 partTwo = do
   (m,trs) <- input
   let revTrs = map (\(x,y) -> (y,x)) (nonE trs)
-  return $ transformTree revTrs (end trs) [m] 1
+  return $ transformTree revTrs (end trs) [m] maxBound 1
 
-test2 = transformTree revTrs (end trs) ["HOHOHO"] 0
+test2 = transformTree revTrs (end trs) ["HOHOHO"] maxBound 1
   where
     revTrs = map (\(x,y) -> (y,x)) (nonE trs)
     trs = [("e","H"),("e","O"),("H","HO"),("H","OH"),("O","HH")]
 
-takeWhileInclusive :: (a -> Bool) -> [a] -> [a]
-takeWhileInclusive _ [] = []
-takeWhileInclusive p (x:xs) = x : if p x then takeWhileInclusive p xs
-                                         else []
-
-transformTree :: [Transform] -> [Medicine] -> [Medicine] -> Int -> Int
-transformTree _ _ [] _ = maxBound
-transformTree trs bs (m:ms) i
-  | null newMeds = maxBound
-  | any (`HS.member` newMeds) bs = i + 1
-  | otherwise = minimum [transformTree trs bs (HS.toList newMeds) (i+1), transformTree trs bs ms (i+1)]
+transformTree :: [Transform] -> [Medicine] -> [Medicine] -> Int -> Int -> [Int]
+transformTree _ _ [] minDepth _ = [minDepth]
+transformTree trs bs (m:ms) minDepth i
+  | (i+1) >= minDepth = [minDepth]
+  | any (`HS.member` newMeds) bs = [i + 1]
+  | otherwise = newMin : transformTree trs bs ms newMin i
   where
     newMeds = genTransforms trs m
+    b = transformTree trs bs (HS.toList newMeds) minDepth (i+1)
+    minB = if null b then maxBound else minimum b
+    newMin = if minB < minDepth then minB else minDepth
 
 nonE = filter (\(x,y) -> x /= "e")
 end = map snd . filter (\(x,y) -> x == "e")
 
-start :: [Transform] -> [Medicine]
-start  = map snd . filter (\(i,o) -> i == "e")
-
 genTransforms :: [Transform] -> Medicine -> HashSet Medicine
-genTransforms trs m = HS.fromList $ concat $ zipWith (\tr is -> parMap rdeepseq (applyTransform mVec) is) trs transforms
+genTransforms trs m = HS.fromList $ concat $ zipWith (\is tr -> map (applyTransform mVec) is) transforms trs
   where
     mVec = V.fromList m
     transforms = parMap rdeepseq (findTransforms m 0) trs
@@ -57,7 +52,7 @@ applyTransform m (i,(index,o)) = V.toList $ V.take index m V.++ V.fromList o V.+
 findTransforms :: Medicine -> Int -> Transform -> [(String,(Int,String))]
 findTransforms [] _ _ = []
 findTransforms m@(x:xs) i tr@(t,o)
-  | t `isPrefixOf` m = (t,(i,o)) : findTransforms (drop (length t) m) (i + length t) tr
+  | t `isPrefixOf` m =  (t,(i,o)) : findTransforms (drop (length t) m) (i + length t) tr
   | otherwise = findTransforms xs (i+1) tr
 
 input :: IO (Medicine,[Transform])

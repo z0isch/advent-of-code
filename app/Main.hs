@@ -4,7 +4,7 @@ import           Codec.Picture
 import           Codec.Picture.Types
 import qualified Data.ByteString.Lazy as L
 import qualified Data.Vector          as V
-import           Day21
+import           Day19
 import           Graphics.Rasterific
 
 main :: IO ()
@@ -15,12 +15,11 @@ main = do
   -- L.writeFile "part-one.gif" bs
   -- bs <- either error return $ encodeGifAnimation 10 LoopingForever (sizeImages 250 250 p2v)
   -- L.writeFile "part-two.gif" bs
-  p1 <-partOne
-  p2 <- partTwo
+  p1 <- partOne
   print p1
-  print p2
+  p2 <- partTwo
   --p2  <- partTwo
-  --print p2
+  print p2
   return ()
 
 sizeImages :: Int -> Int -> [Image PixelRGB8] -> [Image PixelRGB8]
