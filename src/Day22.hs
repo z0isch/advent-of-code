@@ -36,11 +36,16 @@ data GameState = GameState
 makeLenses ''Stats
 makeLenses ''GameState
 
+partOne = iterate (execState (gameRound firstSpellChooser)) gameStart
+
+firstSpellChooser :: [Spell] -> GameState -> Spell
+firstSpellChooser sps _ = head sps
+
 winner :: GameState -> Maybe Turn
 winner gs
   | null $ spellsAvailable gs = Just Boss
-  | gs ^. boss ^. hp <= 0  = Just Player
-  | gs ^. player ^. hp <= 0  = Just Boss
+  | gs ^. boss ^. hp <= 0 = Just Player
+  | gs ^. player ^. hp <= 0 = Just Boss
   | otherwise = Nothing
 
 spellCost :: Spell -> Int
@@ -57,14 +62,21 @@ spellEffect Shield = concat [[ShieldUp],replicate 5 Shielded,[ShieldDown]]
 spellEffect Poison = replicate 6 Poisoned
 spellEffect Recharge = replicate 5 Recharging
 
-castSpell :: Spell -> Turn -> State Stats ()
-castSpell MagicMissle Boss = hp -= 4
-castSpell MagicMissle Player = return ()
-castSpell Drain Boss = hp -= 2
-castSpell Drain Player = hp += 2
-castSpell Shield _ = return ()
-castSpell Poison _ = return ()
-castSpell Recharge _ = return ()
+castSpell :: Spell -> State GameState ()
+castSpell s = do
+  spellDamage s
+  player.mana -= spellCost s
+  scs <- use spellsCast
+  spellsCast .= s:scs
+
+spellDamage :: Spell -> State GameState ()
+spellDamage MagicMissle = boss.hp -= 4
+spellDamage Drain = do
+  boss.hp -= 2
+  player.hp += 2
+spellDamage Shield = return ()
+spellDamage Poison = return ()
+spellDamage Recharge = return ()
 
 spellsGivenEffect :: Effect -> [Spell]
 spellsGivenEffect ShieldUp = [MagicMissle .. Recharge] \\ [Shield]
@@ -84,13 +96,12 @@ effectResult Shielded = return ()
 effectResult Poisoned = hp -= 3
 effectResult Recharging = mana += 101
 
-gameRound :: State GameState ()
-gameRound = do
-  gs <- get
+gameRound :: ([Spell] -> GameState -> Spell) -> State GameState ()
+gameRound f = do
   applyEffects
   checkWinner $ do
     t <- use turn
-    attackRound firstSpellChooser t
+    attackRound f t
     checkWinner $ do
       roundNum += 1
       turn .= nextTurn t
@@ -110,13 +121,12 @@ applyEffects = return ()
 --     ) (i ^. effects)
 
 spellsAvailable :: GameState -> [Spell]
-spellsAvailable gs = filter (\s -> spellCost s <= m) $ nub $ concatMap spellsGivenEffect $ concat es
+spellsAvailable gs = filter (\s -> spellCost s <= m) sps
   where
+    sps = if null sE then [MagicMissle .. Recharge] else sE
+    sE = nub $ concatMap spellsGivenEffect $ concat es
     es = gs^.boss^.effects ++ gs^.player^.effects
     m = gs^.player^.mana
-
-firstSpellChooser :: [Spell] -> GameState -> Spell
-firstSpellChooser sps _ = head sps
 
 attackRound :: ([Spell] -> GameState -> Spell) -> Turn -> State GameState ()
 attackRound _ Boss = do
@@ -126,11 +136,7 @@ attackRound _ Boss = do
   player . hp -= dmg
 attackRound sp Player = do
   gs <- get
-  let spell = sp (spellsAvailable gs) gs
-  boss .= execState (castSpell spell Boss) (gs^.boss)
-  player .= execState (castSpell spell Player) (gs^.player)
-  player.mana -= spellCost spell
-  return ()
+  castSpell $ sp (spellsAvailable gs) gs
 
 gameStart :: GameState
 gameStart = GameState
@@ -148,7 +154,7 @@ gameStart = GameState
     , _attack = 8
     , _armor = 0
     , _mana = 0
-    , _effects = [[Poisoned]]
+    , _effects = []
     }
   , _spellsCast = []
   , _gameOver = False
