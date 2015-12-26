@@ -4,7 +4,7 @@ import           Codec.Picture
 import           Codec.Picture.Types
 import qualified Data.ByteString.Lazy as L
 import qualified Data.Vector          as V
-import           Day24
+import           Day25
 import           Graphics.Rasterific
 
 main :: IO ()
@@ -18,7 +18,7 @@ main = do
   --p1 <- partOne
   --print partOne
   --p2 <- partTwo
-  print partTwo
+  print partOne
   return ()
 
 sizeImages :: Int -> Int -> [Image PixelRGB8] -> [Image PixelRGB8]
