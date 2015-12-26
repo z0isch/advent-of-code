@@ -1,9 +1,6 @@
 module Day24 where
 
-import           Control.Monad
 import           Data.Function
-import           Data.HashSet  (HashSet)
-import qualified Data.HashSet  as H
 import           Data.List
 
 partOne = product $ head $ sortOn product $ head $
